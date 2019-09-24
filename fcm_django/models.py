@@ -15,7 +15,9 @@ class Device(models.Model):
 		verbose_name=_("Is active"), default=True,
 		help_text=_("Inactive devices will not be sent notifications")
 	)
-	user = models.ForeignKey(SETTINGS["USER_MODEL"], related_name='fcm_devices', blank=True, null=True, on_delete=models.CASCADE)
+	user = models.ForeignKey(SETTINGS["USER_MODEL"], related_name='fcm_devices',
+							 blank=True, null=True, on_delete=models.CASCADE,
+							 unique=True) # As to return queryset, OneToOne will return an object
 	date_created = models.DateTimeField(
 		verbose_name=_("Creation date"), auto_now_add=True, null=True
 	)
