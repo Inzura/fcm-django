@@ -7,7 +7,6 @@ from .fields import HexIntegerField
 from .settings import FCM_DJANGO_SETTINGS as SETTINGS
 
 
-@python_2_unicode_compatible
 class Device(models.Model):
 	name = models.CharField(max_length=255, verbose_name=_("Name"), blank=True, null=True)
 	active = models.BooleanField(
