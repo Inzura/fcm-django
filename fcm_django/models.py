@@ -1,9 +1,13 @@
 from __future__ import unicode_literals
+import logging
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from .settings import FCM_DJANGO_SETTINGS as SETTINGS
+
+
+logger = logging.getLogger("inzura")
 
 
 class Device(models.Model):
@@ -104,6 +108,7 @@ class FCMDevice(Device):
 
         device = FCMDevice.objects.filter(registration_id=self.registration_id)
         if 'error' in result['results'][0]:
+            logger.info(f'Error Sending FCM for device {device.id}: {result}')
             device.update(active=False)
 
             if SETTINGS["DELETE_INACTIVE_DEVICES"]:
