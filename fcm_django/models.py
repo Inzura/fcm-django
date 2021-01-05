@@ -108,7 +108,7 @@ class FCMDevice(Device):
 
         device = FCMDevice.objects.filter(registration_id=self.registration_id)
         if 'error' in result['results'][0]:
-            logger.info(f'Error Sending FCM for device {device.id}: {result}')
+            logger.info(f'Error Sending FCM: {result}')
             device.update(active=False)
 
             if SETTINGS["DELETE_INACTIVE_DEVICES"]:
