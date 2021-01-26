@@ -93,6 +93,9 @@ class FCMDevice(Device):
         verbose_name = _("FCM device")
 
     def send_message(self, title=None, body=None, icon=None, data=None, sound=None, badge=None, api_key=None, **kwargs):
+
+        logger.info(f'Sending push message to FCMDevice {self.id} with reg id = {self.registration_id}')
+
         from .fcm import fcm_send_message
         result = fcm_send_message(
             registration_id=self.registration_id,
