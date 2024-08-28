@@ -93,33 +93,22 @@ class FCMDevice(Device):
     class Meta:
         verbose_name = _("FCM device")
 
-    def send_message(self, title=None, body=None, icon=None, data=None, sound=None, badge=None, api_key=None, max_tries=5, seconds_between_tries=1, **kwargs):
+    def send_message(self, title=None, body=None, icon=None, data=None, sound=None, badge=None, api_key=None, **kwargs):
 
         logger.info(f'Sending push message to FCMDevice {self.id} with reg id = {self.registration_id}')
 
         from .fcm import fcm_send_message
-        from pyfcm.errors import FCMServerError
-
-        tries = 0
-        while True:
-            try:
-                tries += 1
-                result = fcm_send_message(
-                    registration_id=self.registration_id,
-                    title=title,
-                    body=body,
-                    icon=icon,
-                    data=data,
-                    sound=sound,
-                    badge=badge,
-                    api_key=api_key,
-                    **kwargs
-                    )
-                break
-            except FCMServerError as e:
-                if tries >= max_tries:
-                    raise e
-                time.sleep(seconds_between_tries)
+        result = fcm_send_message(
+            registration_id=self.registration_id,
+            title=title,
+            body=body,
+            icon=icon,
+            data=data,
+            sound=sound,
+            badge=badge,
+            api_key=api_key,
+            **kwargs
+        )
 
         device = FCMDevice.objects.filter(registration_id=self.registration_id)
         if 'error' in result['results'][0]:
