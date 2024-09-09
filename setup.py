@@ -31,7 +31,7 @@ setup(
 		"fcm_django/management/commands",
 	],
     install_requires=[
-        'pyfcm==1.3.1',
+        'pyfcm==2.0.6',
         'Django'
     ],
 	author=fcm_django.__author__,

@@ -1,6 +1,8 @@
 from __future__ import unicode_literals
 import logging
-import time
+from pyfcm import FCMNotification
+from google.oauth2 import service_account
+import json
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -44,34 +46,37 @@ class FCMDeviceManager(models.Manager):
 
 class FCMDeviceQuerySet(models.query.QuerySet):
     def send_message(self, title=None, body=None, icon=None, data=None, sound=None, badge=None, api_key=None, **kwargs):
-        if self:
-            from .fcm import fcm_send_bulk_message
+        logger.error(f'FCMDeviceQuerySet : send_message : not supported : nothing has been sent')
+        return None
 
-            reg_ids = list(self.filter(active=True).values_list('registration_id', flat=True))
-            if len(reg_ids) == 0:
-                return [{'failure': len(self), 'success': 0}]
-
-            result = fcm_send_bulk_message(
-                registration_ids=reg_ids,
-                title=title,
-                body=body,
-                icon=icon,
-                data=data,
-                sound=sound,
-                badge=badge,
-                api_key=api_key,
-                **kwargs
-            )
-
-            results = result[0]['results']
-            for (index, item) in enumerate(results):
-                if 'error' in item:
-                    reg_id = reg_ids[index]
-                    self.filter(registration_id=reg_id).update(active=False)
-
-                    if SETTINGS["DELETE_INACTIVE_DEVICES"]:
-                        self.filter(registration_id=reg_id).delete()
-            return result
+        # if self:
+        #     from .fcm import fcm_send_bulk_message
+        #
+        #     reg_ids = list(self.filter(active=True).values_list('registration_id', flat=True))
+        #     if len(reg_ids) == 0:
+        #         return [{'failure': len(self), 'success': 0}]
+        #
+        #     result = fcm_send_bulk_message(
+        #         registration_ids=reg_ids,
+        #         title=title,
+        #         body=body,
+        #         icon=icon,
+        #         data=data,
+        #         sound=sound,
+        #         badge=badge,
+        #         api_key=api_key,
+        #         **kwargs
+        #     )
+        #
+        #     results = result[0]['results']
+        #     for (index, item) in enumerate(results):
+        #         if 'error' in item:
+        #             reg_id = reg_ids[index]
+        #             self.filter(registration_id=reg_id).update(active=False)
+        #
+        #             if SETTINGS["DELETE_INACTIVE_DEVICES"]:
+        #                 self.filter(registration_id=reg_id).delete()
+        #     return result
 
 
 class FCMDevice(Device):
@@ -93,29 +98,53 @@ class FCMDevice(Device):
     class Meta:
         verbose_name = _("FCM device")
 
-    def send_message(self, title=None, body=None, icon=None, data=None, sound=None, badge=None, api_key=None, **kwargs):
+    def send_message(self, title=None, body=None, icon=None, data=None, service_account_info=None, timeout=5, **kwargs):
 
-        logger.info(f'Sending push message to FCMDevice {self.id} with reg id = {self.registration_id}')
+        logger.info(f'Sending push message to FCMDevice {self.id}')
 
-        from .fcm import fcm_send_message
-        result = fcm_send_message(
-            registration_id=self.registration_id,
-            title=title,
-            body=body,
-            icon=icon,
-            data=data,
-            sound=sound,
-            badge=badge,
-            api_key=api_key,
-            **kwargs
-        )
+        if kwargs is not None and len(kwargs) > 0:
+            logger.error(f'FCMDevice.send_message : has kwargs : {kwargs}')
 
-        device = FCMDevice.objects.filter(registration_id=self.registration_id)
-        if 'error' in result['results'][0]:
-            logger.info(f'Error Sending FCM: {result}')
-            device.update(active=False)
+        # https://pypi.org/project/pyfcm/
+        # https://github.com/olucurious/pyfcm
 
+        credentials = service_account.Credentials.from_service_account_info(service_account_info, scopes=['https://www.googleapis.com/auth/firebase.messaging'])
+        fcm = FCMNotification(None, credentials=credentials, project_id=service_account_info['project_id'])
+
+        # proxy_dict = {
+        #     "http": "http://127.0.0.1",
+        #     "https": "http://127.0.0.1",
+        # }
+        # fcm = FCMNotification(credentials=credentials, project_id=fcm_config['project_id'], proxy_dict=proxy_dict)
+
+        # Your service account file can be gotten from:  https://console.firebase.google.com/u/0/project/_/settings/serviceaccounts/adminsdk
+        # android_config (dict, optional): Android specific options for messages - https://firebase.google.com/docs/reference/fcm/rest/v1/projects.messages#androidconfig
+        # apns_config (dict, optional): Apple Push Notification Service specific options - https://firebase.google.com/docs/reference/fcm/rest/v1/projects.messages#apnsconfig
+        # webpush_config (dict, optional): Webpush protocol options - https://firebase.google.com/docs/reference/fcm/rest/v1/projects.messages#webpushconfig
+        # fcm_options (dict, optional): Platform independent options for features provided by the FCM SDKs - https://firebase.google.com/docs/reference/fcm/rest/v1/projects.messages#fcmoptions
+
+        # print(f'--------------------- {self.registration_id}')
+        # print(f'--------------------- {title}')
+        # print(f'--------------------- {body}')
+        # print(f'--------------------- {data}')
+
+        notification_title = None if title in ['', None] else title
+        notification_body = None if body in ['', None] else body
+        data_payload = {'inzura_data': json.dumps(data)} if data is not None else None
+        try:
+            result = fcm.notify(fcm_token=self.registration_id,
+                                notification_title=notification_title,
+                                notification_body=notification_body,
+                                notification_image=icon,
+                                data_payload=data_payload,
+                                timeout=timeout)
+
+            result['success'] = True
+        except Exception as e:
+            result = {'success': False, 'error': str(e)}
+            devices = FCMDevice.objects.filter(registration_id=self.registration_id)
+            devices.update(active=False)
             if SETTINGS["DELETE_INACTIVE_DEVICES"]:
-                device.delete()
+                devices.delete()
 
         return result

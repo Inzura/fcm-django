@@ -3,7 +3,6 @@ from django.contrib import admin, messages
 from django.utils.translation import gettext_lazy as _
 from .models import FCMDevice
 from .settings import FCM_DJANGO_SETTINGS as SETTINGS
-from .fcm import FCMError
 User = apps.get_model(*SETTINGS["USER_MODEL"].split("."))
 
 

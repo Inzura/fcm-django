@@ -2,6 +2,7 @@ from django.core.management import CommandError
 from pyfcm import FCMNotification
 from .settings import FCM_DJANGO_SETTINGS as SETTINGS
 
+# ALL DEPRECATED
 
 def fcm_send_message(registration_id,
                      title=None,
