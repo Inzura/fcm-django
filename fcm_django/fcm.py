@@ -1,6 +1,8 @@
 from django.core.management import CommandError
 from pyfcm import FCMNotification
 from .settings import FCM_DJANGO_SETTINGS as SETTINGS
+import logging
+logger = logging.getLogger("inzura")
 
 # ALL DEPRECATED
 
@@ -66,6 +68,9 @@ def fcm_send_message(registration_id,
         InvalidDataError: Invalid data provided
         InternalPackageError: JSON parsing error, mostly from changes in the response of FCM, create a new github issue to resolve it.
     """
+    logger.error(f'FCM : fcm_send_message : not supported : nothing has been sent')
+    return None
+
     if api_key is None:
         api_key = SETTINGS.get("FCM_SERVER_KEY")
     push_service = FCMNotification(api_key=api_key)
@@ -161,6 +166,8 @@ def fcm_send_bulk_message(registration_ids,
         InvalidDataError: Invalid data provided
         InternalPackageError: JSON parsing error, mostly from changes in the response of FCM, create a new github issue to resolve it.
     """
+    logger.error(f'FCM : fcm_send_bulk_message : not supported : nothing has been sent')
+    return None
 
     if api_key is None:
         api_key = SETTINGS.get("FCM_SERVER_KEY")
